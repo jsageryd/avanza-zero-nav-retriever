@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"golang.org/x/net/html"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -13,14 +16,61 @@ func main() {
 	their_site := their_site()
 	their_date := their_date(their_site)
 	their_price := their_price(their_site)
-	our_last_price := our_last_price()
-	fmt.Println(our_last_price)
-	fmt.Printf("P %s ZERO %s\n", their_date, their_price)
+	their_price_line := fmt.Sprintf("P %s ZERO %s", their_date, their_price)
+	our_price_line := our_price_line()
+	if their_price_line != our_price_line {
+		fmt.Println("Ours:   ", our_price_line)
+		fmt.Println("Theirs: ", their_price_line)
+		append_price_line(their_price_line)
+		commit_change(their_date)
+	}
 }
 
-func our_last_price() string {
-	price_db := fmt.Sprintf("%s/Documents/ledger/prices/price-db", os.Getenv("HOME"))
-	return price_db
+func commit_change(their_date string) {
+	git_commit := exec.Command("git", "commit", "-am", fmt.Sprintf("Update %s", their_date))
+	price_db_dir := filepath.Dir(price_db())
+	git_commit.Dir = price_db_dir
+	git_push := exec.Command("git", "push")
+	git_push.Dir = price_db_dir
+	err := git_commit.Run()
+	if err != nil {
+		log.Fatal("git_commit ", err)
+	}
+	err = git_push.Run()
+	if err != nil {
+		log.Fatal("git_push ", err)
+	}
+}
+
+func append_price_line(price_line string) {
+	file, err := os.OpenFile(price_db(), os.O_RDWR|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	file.WriteString(price_line + "\n")
+}
+
+func last_line(path string) string {
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	var line string
+	for scanner.Scan() {
+		line = scanner.Text()
+	}
+	return line
+}
+
+func price_db() string {
+	return fmt.Sprintf("%s/Documents/ledger/prices/price-db", os.Getenv("HOME"))
+}
+
+func our_price_line() string {
+	return last_line(price_db())
 }
 
 func their_price(node *html.Node) string {
