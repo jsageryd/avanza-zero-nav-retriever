@@ -7,9 +7,14 @@ import (
 	"strings"
 )
 
-var url, ident string
-var git Git
-var priceFile PriceFile
+var (
+	url       string
+	ident     string
+	git       Git
+	priceFile PriceFile
+)
+
+const pricedb = "price-db"
 
 func main() {
 	parseOpts()
@@ -27,16 +32,16 @@ func parseOpts() {
 	url = strings.TrimSpace(url)
 	ident = strings.TrimSpace(ident)
 	if repo == "" {
-		log.Fatal("Need repo")
+		log.Fatal("Need repo, something like /path/to/valid/git/repo/")
 	}
 	if url == "" {
-		log.Fatal("Need URL")
+		log.Fatal("Need URL, something like https://www.avanza.se/fonder/om-fonden.html/41567/avanza-zero")
 	}
 	if ident == "" {
-		log.Fatal("Need ident")
+		log.Fatal("Need ident, something like ZERO")
 	}
 	git = Git{repo}
-	priceFile = PriceFile{strings.TrimRight(repo, "/") + "/price-db"}
+	priceFile = PriceFile{strings.TrimRight(repo, "/") + "/" + pricedb}
 	if !git.RepoValid() {
 		log.Fatal("Not a repo")
 	}
@@ -48,7 +53,7 @@ func updatePrice() {
 	ourStr := priceFile.lastLine()
 	if theirStr != ourStr {
 		priceFile.addLine(theirStr)
-		git.Add("price-db")
+		git.Add(pricedb)
 		git.Commit("Update " + theirPrice.date)
 		git.Push()
 	}
