@@ -12,21 +12,21 @@ type Git struct {
 func (g Git) Commit(message string) {
 	err := g.runCommand("commit", "-m", message)
 	if err != nil {
-		log.Fatal("Error while committing: " + err.Error())
+		log.Fatal("Error while committing")
 	}
 }
 
 func (g Git) Add(path string) {
 	err := g.runCommand("add", path)
 	if err != nil {
-		log.Fatal("Error while adding: " + err.Error())
+		log.Fatal("Error while adding")
 	}
 }
 
 func (g Git) Push() {
 	err := g.runCommand("push")
 	if err != nil {
-		log.Fatal("Error while pushing: " + err.Error())
+		log.Fatal("Error while pushing")
 	}
 }
 
