@@ -10,19 +10,19 @@ import (
 var (
 	url       string
 	ident     string
-	git       Git
+	var repo string
 	priceFile PriceFile
 )
 
 const pricedb = "price-db"
 
 func main() {
+  cmd := exec.Command(
 	parseOpts()
 	updatePrice()
 }
 
 func parseOpts() {
-	var repo string
 	flag.StringVar(&repo, "repo", "", "path to Git workdir containing price-db file")
 	flag.StringVar(&url, "url", "", "URL to Avanza page from which to fetch data")
 	flag.StringVar(&ident, "ident", "", "price identifier use in price-db")
@@ -40,7 +40,6 @@ func parseOpts() {
 	if ident == "" {
 		log.Fatal("Need ident, something like ZERO")
 	}
-	git = Git{repo}
 	priceFile = PriceFile{strings.TrimRight(repo, "/") + "/" + pricedb}
 	if !git.RepoValid() {
 		log.Fatal("Not a repo")
@@ -57,4 +56,14 @@ func updatePrice() {
 		git.Commit("Update " + theirPrice.date)
 		git.Push()
 	}
+}
+
+func addCommitPush() {
+  
+}
+
+func git(arg ...string) *exec.Cmd {
+  cmd := exec.Command("git", arg...)
+  cmd.WorkDir = repo
+return &cmd
 }
